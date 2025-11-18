@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Ro'yxatdan o'tish</h3>
+  <form method="post" action="{{ url_for('register') }}">
+    <div class="form-row"><label class="small">Ism</label><input class="input" name="name" required></div>
+    <div class="form-row"><label class="small">Email</label><input class="input" name="email" required></div>
+    <div class="form-row"><label class="small">Parol</label><input class="input" name="password" type="password" required></div>
+    <button class="btn" type="submit">Ro'yxatdan o'tish</button>
+  </form>
+</div>
+{% endblock %}

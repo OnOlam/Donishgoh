@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Kirish</h3>
+  <form method="post" action="{{ url_for('login') }}">
+    <div class="form-row">
+      <label class="small">Email</label>
+      <input class="input" name="email" required>
+    </div>
+    <div class="form-row">
+      <label class="small">Parol</label>
+      <input class="input" name="password" type="password" required>
+    </div>
+    <button class="btn" type="submit">Kirish</button>
+  </form>
+</div>
+{% endblock %}

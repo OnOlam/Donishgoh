@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Admin Dashboard</h3>
+  <div style="height:10px"></div>
+  <h4>Kitob qo'shish</h4>
+  <form method="post" action="{{ url_for('admin_add_book') }}" enctype="multipart/form-data">
+    <div class="form-row"><label class="small">Sarlavha</label><input class="input" name="title" required></div>
+    <div class="form-row"><label class="small">Muallif</label><input class="input" name="author"></div>
+    <div class="form-row"><label class="small">Tavsif</label><textarea class="input" name="description"></textarea></div>
+    <div class="form-row"><label class="small">Kitob fayli (opsional)</label><input type="file" name="file"></div>
+    <button class="btn" type="submit">Qo'shish</button>
+  </form>
+
+  <div style="height:16px"></div>
+  <h4>Foydalanuvchilar</h4>
+  <table class="table">
+    <tr><th>Id</th><th>Ism</th><th>Email</th><th>Admin</th><th>Amallar</th></tr>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ 'Ha' if u.is_admin else 'Yo‘q' }}</td>
+        <td>
+          <a class="btn" href="{{ url_for('admin_toggle_user', user_id=u.id) }}">Toggle Admin</a>
+          <a class="btn" href="{{ url_for('admin_notify_user', user_id=u.id) }}">Xabar</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

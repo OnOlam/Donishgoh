@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title or "Kutubxona" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">Kutubxona — LocalApp</div>
+      <div class="nav">
+        {% if session.get('user_id') %}
+          <span class="small">Salom, {{ session.get('user_name') }}</span>
+          {% if session.get('is_admin') %}
+            <span class="admin-badge">Admin</span>
+            <a class="btn" href="{{ url_for('admin') }}">Admin</a>
+          {% endif %}
+          <a class="btn" href="{{ url_for('books') }}">Kitoblar</a>
+          <a class="btn" href="{{ url_for('notifications') }}">Xabarlar</a>
+          <a class="btn" href="{{ url_for('logout') }}">Chiqish</a>
+        {% else %}
+          <a class="btn" href="{{ url_for('login') }}">Kirish</a>
+          <a class="btn" href="{{ url_for('register') }}">Ro'yxatdan o'tish</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="card notice">
+          {% for m in messages %} <div>{{ m }}</div> {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <div class="footer">© Kutubxona — Local development</div>
+  </div>
+</body>
+</html>

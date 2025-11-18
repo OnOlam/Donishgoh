@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Xabarlar</h3>
+  <div>
+    {% for n in notes %}
+      <div class="card">
+        <div class="small"><strong>{{ n.title }}</strong> — <span class="small">{{ n.created_at }}</span></div>
+        <div>{{ n.message }}</div>
+      </div>
+    {% else %}
+      <p class="small">Sizga xabar yo'q.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

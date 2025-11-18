@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Welcome to Kutubxona</h2>
+  <p class="small">Elektron kutubxona lokal demo. Kirish uchun login qiling yoki roʻyxatdan oʻting.</p>
+  <div style="height:12px"></div>
+  <a class="btn" href="{{ url_for('books') }}">Kitoblarni koʻrish</a>
+</div>
+{% endblock %}
