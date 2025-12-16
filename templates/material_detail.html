@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="detail-container">
+  <div class="detail-header">
+    <div class="detail-type-badge">
+      {% if material.material_type == 'book' %}📚 Китоб
+      {% elif material.material_type == 'app' %}📱 Барнома
+      {% elif material.material_type == 'image' %}🖼️ Расм
+      {% elif material.material_type == 'video' %}🎬 Видео
+      {% endif %}
+    </div>
+    <h2 class="detail-title">{{ material.title }}</h2>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-main">
+      {% if material.author %}
+        <div class="detail-info-row">
+          <span class="info-label">👤 Муаллиф/Офаридгор:</span>
+          <span class="info-value">{{ material.author }}</span>
+        </div>
+      {% endif %}
+
+      {% if uploader %}
+        <div class="detail-info-row">
+          <span class="info-label">📤 Боргузорӣ аз ҷониби:</span>
+          <span class="info-value">{{ uploader.name }}</span>
+        </div>
+      {% endif %}
+
+      {% if material.created_at %}
+        <div class="detail-info-row">
+          <span class="info-label">📅 Санаи боргузорӣ:</span>
+          <span class="info-value">{{ material.created_at[:10] }} {{ material.created_at[11:16] }}</span>
+        </div>
+      {% endif %}
+
+      <div class="detail-info-row">
+        <span class="info-label">👁️ Дида шуд:</span>
+        <span class="info-value">{{ material.view_count }} маротиба</span>
+      </div>
+
+      <div style="height:24px"></div>
+
+      <div class="detail-description-section">
+        <h4>📝 Тавсиф</h4>
+        <div class="detail-description">
+          {{ material.description if material.description else "Тавсиф дастрас нест." }}
+        </div>
+      </div>
+
+      <div style="height:24px"></div>
+
+      <div class="detail-actions">
+        {% if material.filename %}
+          <a class="btn btn-large btn-download" href="{{ url_for('download_file', filename=material.filename) }}">
+            ⬇️ Боргирӣ
+          </a>
+        {% else %}
+          <div class="no-file-notice">
+            ⚠️ Файл боргузорӣ нашудааст
+          </div>
+        {% endif %}
+
+        <a class="btn btn-secondary" href="{{ url_for('materials', material_type=material.material_type) }}">
+          ← Баргашт
+        </a>
+      </div>
+    </div>
+
+    <div class="detail-sidebar">
+      <div class="sidebar-card">
+        <h4>ℹ️ Маълумоти Иловагӣ</h4>
+        
+        {% if material.filename %}
+          <div class="sidebar-info">
+            <span class="sidebar-label">📎 Файл:</span>
+            <span class="sidebar-value">{{ material.filename }}</span>
+          </div>
+        {% endif %}
+
+        <div class="sidebar-info">
+          <span class="sidebar-label">🏷️ Навъ:</span>
+          <span class="sidebar-value">
+            {% if material.material_type == 'book' %}Китоб
+            {% elif material.material_type == 'app' %}Барнома
+            {% elif material.material_type == 'image' %}Расм
+            {% elif material.material_type == 'video' %}Видео
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="sidebar-info">
+          <span class="sidebar-label">🆔 ID:</span>
+          <span class="sidebar-value">#{{ material.id }}</span>
+        </div>
+      </div>
+
+      {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
+        <div class="sidebar-card admin-actions">
+          <h4>⚙️ Амалҳои администратор</h4>
+          
+          {% if session.get('admin_level') == 2 or material.uploaded_by == session.get('user_id') %}
+            <a class="btn btn-edit" href="{{ url_for('admin_edit_material', material_id=material.id) }}">
+              ✏️ Таҳрир
+            </a>
+            
+            <a class="btn btn-stats" href="{{ url_for('admin_material_stats', material_id=material.id) }}">
+              📊 Омор
+            </a>
+            
+            <a class="btn btn-delete" href="{{ url_for('admin_delete_material', material_id=material.id) }}" 
+               onclick="return confirm('Маводро нест кардан даркорми?')">
+              🗑️ Нест кардан
+            </a>
+          {% else %}
+            <p class="small">Шумо танҳо метавонед маводҳои худро назорат кунед.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

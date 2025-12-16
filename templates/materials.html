@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="materials-header">
+  <h2>
+    {% if current_type == 'book' %}📚 Китобҳо
+    {% elif current_type == 'app' %}📱 Юарномаҳо
+    {% elif current_type == 'image' %}🖼️ Расмҳо
+    {% elif current_type == 'video' %}🎬 Видеоҳо
+    {% else %}📦 Ҳама маводҳо
+    {% endif %}
+  </h2>
+  
+  <div class="filter-tabs">
+    <a class="filter-tab {% if not current_type %}active{% endif %}" href="{{ url_for('materials') }}">
+      Ҳама
+    </a>
+    <a class="filter-tab {% if current_type == 'book' %}active{% endif %}" href="{{ url_for('materials', material_type='book') }}">
+      📚 Китобҳо
+    </a>
+    <a class="filter-tab {% if current_type == 'app' %}active{% endif %}" href="{{ url_for('materials', material_type='app') }}">
+      📱 Барномаҳо
+    </a>
+    <a class="filter-tab {% if current_type == 'image' %}active{% endif %}" href="{{ url_for('materials', material_type='image') }}">
+      🖼️ Расмҳо
+    </a>
+    <a class="filter-tab {% if current_type == 'video' %}active{% endif %}" href="{{ url_for('materials', material_type='video') }}">
+      🎬 Видеоҳо
+    </a>
+  </div>
+</div>
+
+<div style="height:24px"></div>
+
+{% if materials %}
+  <div class="materials-grid">
+    {% for m in materials %}
+    <div class="material-card" data-type="{{ m.material_type }}">
+      <div class="material-type-badge">
+        {% if m.material_type == 'book' %}📚 Китоб
+        {% elif m.material_type == 'app' %}📱 Барнома
+        {% elif m.material_type == 'image' %}🖼️ Расм
+        {% elif m.material_type == 'video' %}🎬 Видео
+        {% endif %}
+      </div>
+      
+      <h4 class="material-title">{{ m.title }}</h4>
+      
+      {% if m.author %}
+        <p class="material-author">👤 {{ m.author }}</p>
+      {% endif %}
+      
+      <p class="material-description">
+        {{ m.description[:150] }}{% if m.description and m.description|length > 150 %}...{% endif %}
+      </p>
+      
+      <div class="material-meta">
+        <span class="meta-item">👁️ {{ m.view_count }} дида шуд</span>
+        {% if m.created_at %}
+          <span class="meta-item">📅 {{ m.created_at[:10] }}</span>
+        {% endif %}
+      </div>
+      
+      <div class="material-actions">
+        <a class="btn btn-primary" href="{{ url_for('material_detail', material_id=m.id) }}">
+          Пурра →
+        </a>
+        {% if m.filename %}
+          <a class="btn btn-download" href="{{ url_for('download_file', filename=m.filename) }}">
+            ⬇️ Боргирӣ
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <h3>Маводҳо ёфт нашуданд.</h3>
+    <p class="small">
+      {% if current_type %}
+        Айни замон дар ин категория мавод вуҷуд надорад..
+      {% else %}
+        Ҳанӯз ягон мавод боргузорӣ нашудааст..
+      {% endif %}
+    </p>
+    {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
+      <a class="btn btn-primary" href="{{ url_for('admin') }}">
+        + Мавод илова кунед
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}
