@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="admin-dashboard">
+  <div class="admin-header">
+    <h2>⚙️ Панели маъмурӣ</h2>
+    <div class="admin-level-badge">
+      {% if user.admin_level == 2 %}
+        <span class="badge-main-admin">👑 Сардори маъмурӣ</span>
+      {% else %}
+        <span class="badge-secondary-admin">🛡️ Администратори оддӣ</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="height:24px"></div>
+
+  <!-- Material qo'shish forma -->
+  <div class="admin-section">
+    <h3>➕ Маводи нав илова кунед</h3>
+    
+    <form method="post" action="{{ url_for('admin_add_material') }}" enctype="multipart/form-data" class="admin-form">
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">🏷️ Навъи мавод *</label>
+          <select class="input" name="material_type" id="materialType" required onchange="updateFileFilter()">
+            <option value="book">📚 Китоб</option>
+            <option value="app">📱 Барнома</option>
+            {% if user.admin_level == 2 %}
+              <option value="image">🖼️ Расм</option>
+              <option value="video">🎬 Видео</option>
+            {% endif %}
+          </select>
+          {% if user.admin_level == 1 %}
+            <p class="form-hint">⚠️ Шумо танҳо метавонед китобҳо ва барномаҳоро бор кунед</p>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📝 Унвон *</label>
+          <input class="input" name="title" required placeholder="Номи мавод...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">👤 Муаллиф/Офаридгор</label>
+          <input class="input" name="author" placeholder="Ном ё номи компания...">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📄 Тавсиф</label>
+        <textarea class="input" name="description" rows="4" placeholder="Маълумоти муфассал дар бораи мавод..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📎 Боркунии файл</label>
+        <div class="file-upload-wrapper">
+          <input type="file" name="file" id="fileInput" class="file-input">
+          <label for="fileInput" class="file-label">
+            <span class="file-icon">📁</span>
+            <span id="fileName">Файлро интихоб кунед...</span>
+          </label>
+        </div>
+      </div>
+
+      <button class="btn btn-large btn-success" type="submit">
+        ✅ Мавод илова кунед
+      </button>
+    </form>
+  </div>
+
+  <div style="height:32px"></div>
+
+  <!-- Materiallar ro'yxati -->
+  <div class="admin-section">
+    <h3>📦 Маводҳои ман</h3>
+    
+    {% if materials %}
+      <div class="admin-materials-list">
+        {% for m in materials %}
+          <div class="admin-material-item">
+            <div class="material-item-header">
+              <div class="material-item-type">
+                {% if m.material_type == 'book' %}📚
+                {% elif m.material_type == 'app' %}📱
+                {% elif m.material_type == 'image' %}🖼️
+                {% elif m.material_type == 'video' %}🎬
+                {% endif %}
+              </div>
+              <div class="material-item-info">
+                <h4>{{ m.title }}</h4>
+                <p class="small">
+                  {% if m.author %}👤 {{ m.author }} • {% endif %}
+                  👁️ {{ m.view_count }} дида шуд • 
+                  📅 {{ m.created_at[:10] }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="material-item-actions">
+              <a class="btn btn-sm btn-view" href="{{ url_for('material_detail', material_id=m.id) }}" target="_blank">
+                👁️ Намоиш
+              </a>
+              <a class="btn btn-sm btn-stats" href="{{ url_for('admin_material_stats', material_id=m.id) }}">
+                📊 Омор
+              </a>
+              <a class="btn btn-sm btn-edit" href="{{ url_for('admin_edit_material', material_id=m.id) }}">
+                ✏️ Таҳрир
+              </a>
+              <a class="btn btn-sm btn-delete" href="{{ url_for('admin_delete_material', material_id=m.id) }}" 
+                 onclick="return confirm('Маводро нест кардан даркорми?')">
+                🗑️ Нест кардан
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state-small">
+        <p>📭 Шумо ҳанӯз ягон мавод бор накардаед..</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Faqat Bosh Admin uchun -->
+  {% if user.admin_level == 2 %}
+    <div style="height:32px"></div>
+    
+    <div class="admin-section">
+      <h3>👥 Идоракунии корбар</h3>
+      
+      {% if users %}
+        <div class="users-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>🆔 ID</th>
+                <th>👤 Ном</th>
+                <th>📧 Почтаи электронӣ</th>
+                <th>🛡️ Сатҳ</th>
+                <th>⚙️ Амалҳо</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+                <tr>
+                  <td>#{{ u.id }}</td>
+                  <td>{{ u.name }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    {% if u.admin_level == 2 %}
+                      <span class="badge-main-admin">Сардори маъмурӣ</span>
+                    {% elif u.admin_level == 1 %}
+                      <span class="badge-secondary-admin">Администратори оддӣ</span>
+                    {% else %}
+                      <span class="badge-user">Истифодабаранда</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.id != session.get('user_id') and u.admin_level != 2 %}
+                      <a class="btn btn-sm btn-toggle" href="{{ url_for('admin_toggle_user', user_id=u.id) }}">
+                        {% if u.admin_level == 1 %}
+                          ❌ Администраторро гиред
+                        {% else %}
+                          ✅ Администратор
+                        {% endif %}
+                      </a>
+                      <a class="btn btn-sm btn-notify" href="{{ url_for('admin_notify_user', user_id=u.id) }}">
+                        💬 Ҳабар
+                      </a>
+                    {% elif u.id == session.get('user_id') %}
+                      <span class="small muted">Шумо</span>
+                    {% else %}
+                      <span class="small muted">Сардори маъмурӣ</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+// Fayl input o'zgarishini kuzatish
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const fileName = e.target.files[0] ? e.target.files[0].name : 'Маводро интиҳоб кунед...';
+  document.getElementById('fileName').textContent = fileName;
+});
+
+// Material turiga qarab fayl filtrini o'zgartirish
+function updateFileFilter() {
+  const materialType = document.getElementById('materialType').value;
+  const fileInput = document.getElementById('fileInput');
+  const fileHint = document.getElementById('fileHint');
+  
+  const acceptTypes = {
+    'book': '.pdf,.epub,.mobi,.djvu,.fb2,.doc,.docx',
+    'app': '.apk,.exe,.msi,.dmg,.deb,.rpm',
+    'image': '.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp',
+    'video': '.mp4,.avi,.mkv,.mov,.wmv,.flv,.webm'
+  };
+  
+  const hintTexts = {
+    'book': 'Иҷозат додаги: PDF, EPUB, MOBI, DJVU, FB2, DOC, DOCX',
+    'app': 'Иҷозат додаги: APK, EXE, MSI, DMG, DEB, RPM',
+    'image': 'Иҷозат додаги: JPG, PNG, GIF, WEBP, SVG, BMP',
+    'video': 'Иҷозат додаги: MP4, AVI, MKV, MOV, WMV, FLV, WEBM'
+  };
+  
+  fileInput.setAttribute('accept', acceptTypes[materialType]);
+  fileHint.textContent = hintTexts[materialType];
+}
+
+// Sahifa yuklanganda fayl filtrini o'rnatish
+updateFileFilter();
+</script>
+
+{% endblock %}

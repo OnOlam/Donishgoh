@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon">✨</div>
+      <h2 class="auth-title">Қайд кардан</h2>
+      <p class="auth-subtitle">Ҳисоби нав эҷод кунед ва оғоз кунед</p>
+    </div>
+
+    <form method="post" action="{{ url_for('register') }}" class="auth-form" onsubmit="return validateForm()">
+      <div class="form-group">
+        <label class="form-label">
+          <span class="label-icon">👤</span>
+          <span>Ному насаби пурраи шумо</span>
+        </label>
+        <input 
+          class="input" 
+          type="text" 
+          name="name" 
+          id="nameInput"
+          placeholder="Ном ва Насаб" 
+          required 
+          minlength="3"
+          autocomplete="name"
+        >
+        <span class="form-hint">Ҳадди ақал 3 ҳарф</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span class="label-icon">📧</span>
+          <span>Суроғаи Gmail</span>
+        </label>
+        <input 
+          class="input" 
+          type="email" 
+          name="email" 
+          id="emailInput"
+          placeholder="шумо@gmail" 
+          required 
+          autocomplete="email"
+        >
+        <span class="form-hint">Суроғаи почтаи электронии дурустро ворид кунед.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span class="label-icon">🔑</span>
+          <span>Калидвожа созед</span>
+        </label>
+        <div class="password-input-wrapper">
+          <input 
+            class="input" 
+            type="password" 
+            name="password" 
+            id="registerPassword"
+            placeholder="••••••••" 
+            required 
+            minlength="6"
+            autocomplete="new-password"
+            oninput="checkPasswordStrength()"
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            onclick="togglePassword('registerPassword', this)"
+            aria-label="Parolni ko'rsatish/yashirish"
+          >
+            👁️
+          </button>
+        </div>
+        <div class="password-strength">
+          <div class="strength-bar" id="strengthBar"></div>
+        </div>
+        <span class="form-hint" id="strengthText">Бояд ҳадди аққал 6 аломат дарозӣ дошта бошад</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span class="label-icon">🔒</span>
+          <span>Калидвожаро тасдиқ кунед</span>
+        </label>
+        <div class="password-input-wrapper">
+          <input 
+            class="input" 
+            type="password" 
+            name="password_confirm" 
+            id="confirmPassword"
+            placeholder="••••••••" 
+            required 
+            autocomplete="new-password"
+            oninput="checkPasswordMatch()"
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            onclick="togglePassword('confirmPassword', this)"
+            aria-label="Parolni ko'rsatish/yashirish"
+          >
+            👁️
+          </button>
+        </div>
+        <span class="form-hint" id="matchText"></span>
+      </div>
+
+      <div class="form-agreement">
+        <label class="checkbox-label">
+          <input type="checkbox" required>
+          <span>Ман <a href="#" class="auth-link">Шартҳои истифода</a> ва <a href="#" class="auth-link">Сиёсати Корбурди Маълумоти Шахсӣ</a> Ман бо он розӣ ҳастам</span>
+        </label>
+      </div>
+
+      <button class="btn btn-large btn-success auth-submit" type="submit">
+        <span class="btn-icon">🎉</span>
+        Қайд кардан
+      </button>
+    </form>
+
+    <div class="auth-divider">
+      <span>ё</span>
+    </div>
+
+    <div class="auth-footer">
+      <p class="auth-footer-text">
+        Оё шумо аллакай ҳисоб доред?
+        <a href="{{ url_for('login') }}" class="auth-link">
+          Даромадан →
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <div class="auth-benefits">
+    <h3 class="benefits-title">Чаро моро интихоб кунед?</h3>
+    
+    <div class="benefit-item">
+      <div class="benefit-icon">✅</div>
+      <div class="benefit-text">
+        <h4>100% ройгон</h4>
+        <p>Ҳамаи маводҳо ройгон зеркашӣ карда мешаванд</p>
+      </div>
+    </div>
+
+    <div class="benefit-item">
+      <div class="benefit-icon">🚀</div>
+      <div class="benefit-text">
+        <h4>Администратор шавед</h4>
+        <p>Истифодабарандагони фаъол ҳуқуқҳои администраторӣ хоҳанд дошт</p>
+      </div>
+    </div>
+
+    <div class="benefit-item">
+      <div class="benefit-icon">📤</div>
+      <div class="benefit-text">
+        <h4>Маводро бор кунед</h4>
+        <p>Маводҳои худро бо дигарон мубодила кунед</p>
+      </div>
+    </div>
+
+    <div class="benefit-item">
+      <div class="benefit-icon">📊</div>
+      <div class="benefit-text">
+        <h4>Омор</h4>
+        <p>Пайгирӣ кунед, ки маводи шумо чанд маротиба тамошо шудааст</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePassword(inputId, button) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    button.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    button.textContent = '👁️';
+  }
+}
+
+function checkPasswordStrength() {
+  const password = document.getElementById('registerPassword').value;
+  const strengthBar = document.getElementById('strengthBar');
+  const strengthText = document.getElementById('strengthText');
+  
+  let strength = 0;
+  if (password.length >= 6) strength++;
+  if (password.length >= 8) strength++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+  if (/\d/.test(password)) strength++;
+  if (/[^a-zA-Z0-9]/.test(password)) strength++;
+  
+  const colors = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981'];
+  const texts = ['Juda zaif', 'Zaif', "O'rtacha", 'Kuchli', 'Juda kuchli'];
+  const widths = ['20%', '40%', '60%', '80%', '100%'];
+  
+  if (password.length === 0) {
+    strengthBar.style.width = '0%';
+    strengthText.textContent = 'Kamida 6 ta belgidan iborat bo\'lsin';
+    strengthText.style.color = '#94a3b8';
+  } else {
+    strengthBar.style.width = widths[strength];
+    strengthBar.style.backgroundColor = colors[strength];
+    strengthText.textContent = texts[strength];
+    strengthText.style.color = colors[strength];
+  }
+  
+  checkPasswordMatch();
+}
+
+function checkPasswordMatch() {
+  const password = document.getElementById('registerPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const matchText = document.getElementById('matchText');
+  
+  if (confirm.length === 0) {
+    matchText.textContent = '';
+    return;
+  }
+  
+  if (password === confirm) {
+    matchText.textContent = '✓ Parollar mos keldi';
+    matchText.style.color = '#10b981';
+  } else {
+    matchText.textContent = '✗ Parollar mos kelmayapti';
+    matchText.style.color = '#ef4444';
+  }
+}
+
+function validateForm() {
+  const password = document.getElementById('registerPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  
+  if (password !== confirm) {
+    alert('❌ Паролҳо бо ҳам мувофиқат намекунанд!');
+    return false;
+  }
+  
+  if (password.length < 6) {
+    alert('❌ Парол бояд ҳадди аққал 6 аломат дошта бошад!');
+    return false;
+  }
+  
+  return true;
+}
+</script>
+
+{% endblock %}

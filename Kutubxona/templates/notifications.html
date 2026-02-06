@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="notifications-container">
+  <div class="notifications-header">
+    <h2>📬 Ҳабарҳо</h2>
+    <span class="notifications-count">{{ notes|length }} то Ҳабар</span>
+  </div>
+
+  <div style="height:24px"></div>
+
+  {% if notes %}
+    <div class="notifications-list">
+      {% for n in notes %}
+        <div class="notification-card">
+          <div class="notification-icon">💌</div>
+          <div class="notification-content">
+            <div class="notification-header">
+              <h4 class="notification-title">{{ n.title }}</h4>
+              <span class="notification-time">
+                🕒 {{ n.created_at[:10] }} {{ n.created_at[11:16] }}
+              </span>
+            </div>
+            <div class="notification-message">
+              {{ n.message }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>Ҳабар нест</h3>
+      <p class="small">Шумо ҳанӯз ягон ҳабар нагирифтаед.</p>
+    </div>
+  {% endif %}
+
+  {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
+    <div style="height:32px"></div>
+    <div class="notification-info-card">
+      <h4>ℹ️ Барои администратор</h4>
+      <p>Барои фиристодани ҳабарҳо ба корбарон аз панели идоракунӣ истифода баред.</p>
+      <a class="btn btn-primary" href="{{ url_for('admin') }}">
+        ⚙️ Ба панели идоракунӣ равед
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

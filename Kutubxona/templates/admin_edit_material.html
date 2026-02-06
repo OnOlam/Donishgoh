@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="edit-container">
+  <div class="edit-header">
+    <h2>✏️ Таҳрири Мавод</h2>
+    <div class="edit-type-badge">
+      {% if material.material_type == 'book' %}📚 Китоб
+      {% elif material.material_type == 'app' %}📱 Барнома
+      {% elif material.material_type == 'image' %}🖼️ Расм
+      {% elif material.material_type == 'video' %}🎬 Видео
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="height:24px"></div>
+
+  <form method="post" action="{{ url_for('admin_edit_material', material_id=material.id) }}" 
+        enctype="multipart/form-data" class="edit-form">
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">📝 Унвон *</label>
+        <input class="input" name="title" value="{{ material.title }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">👤 Муаллиф/Офаридгор</label>
+        <input class="input" name="author" value="{{ material.author if material.author else '' }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">📄 Тавсиф</label>
+      <textarea class="input" name="description" rows="6">{{ material.description if material.description else '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">📎 Файли навро бор кунед (opsional)</label>
+      
+      {% if material.filename %}
+        <div class="current-file">
+          <span class="current-file-icon">📁</span>
+          <span class="current-file-name">Файли ҷорӣ: {{ material.filename }}</span>
+        </div>
+      {% endif %}
+      
+      <div class="file-upload-wrapper">
+        <input type="file" name="file" id="fileInput" class="file-input" 
+               accept="{% if material.material_type == 'book' %}.pdf,.epub,.mobi,.djvu,.fb2,.doc,.docx
+                       {% elif material.material_type == 'app' %}.apk,.exe,.msi,.dmg,.deb,.rpm
+                       {% elif material.material_type == 'image' %}.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp
+                       {% elif material.material_type == 'video' %}.mp4,.avi,.mkv,.mov,.wmv,.flv,.webm
+                       {% endif %}">
+        <label for="fileInput" class="file-label">
+          <span class="file-icon">📁</span>
+          <span id="fileName">Файли навро интихоб кунед...</span>
+        </label>
+        <div class="file-hint">
+          {% if material.material_type == 'book' %}Иҷозат додаги: PDF, EPUB, MOBI, DJVU, FB2, DOC, DOCX
+          {% elif material.material_type == 'app' %}Иҷозат додаги: APK, EXE, MSI, DMG, DEB, RPM
+          {% elif material.material_type == 'image' %}Иҷозат додаги: JPG, PNG, GIF, WEBP, SVG, BMP
+          {% elif material.material_type == 'video' %}Иҷозат додаги: MP4, AVI, MKV, MOV, WMV, FLV, WEBM
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-large btn-success" type="submit">
+        ✅ Захира кардан
+      </button>
+      <a class="btn btn-large btn-secondary" href="{{ url_for('admin') }}">
+        ❌ Бекор кардан
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const fileName = e.target.files[0] ? e.target.files[0].name : 'Маводи навро интиҳоб кунед...';
+  document.getElementById('fileName').textContent = fileName;
+});
+</script>
+
+{% endblock %}

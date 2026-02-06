@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title or "Китобҳона - Манбаҳои электрони" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <span class="brand-icon">📚</span>
+        <span>Китобҳона</span>
+      </div>
+      <div class="nav">
+        {% if session.get('user_id') %}
+          
+          {% if session.get('admin_level') == 2 %}
+            <span class="admin-badge main-admin">Сардори маъмурӣ</span>
+          {% elif session.get('admin_level') == 1 %}
+            <span class="admin-badge secondary-admin">Администратор</span>
+          {% endif %}
+          
+          <a class="btn" href="{{ url_for('index') }}">Саҳифаи асосӣ</a>
+          <a class="btn" href="{{ url_for('materials') }}">Маводҳо</a>
+          
+          {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
+            <a class="btn btn-admin" href="{{ url_for('admin') }}">⚙️ Администратор</a>
+          {% endif %}
+          
+          <a class="btn" href="{{ url_for('notifications') }}">
+            📬 Ҳабарҳо
+          </a>
+          <a class="btn btn-logout" href="{{ url_for('logout') }}">Баромадгоҳ</a>
+        {% else %}
+          <a class="btn" href="{{ url_for('index') }}">Саҳифаи асосӣ</a>
+          <a class="btn" href="{{ url_for('materials') }}">Маводҳо</a>
+          <a class="btn btn-primary" href="{{ url_for('login') }}">Даромадан</a>
+          <a class="btn btn-success" href="{{ url_for('register') }}">Қайд кардан</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for m in messages %}
+            <div class="flash-message">
+              <span class="flash-icon">ℹ️</span>
+              <span>{{ m }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <div class="footer">
+      <div class="footer-content">
+        <div>📚 Китобхона — Платформаи захираҳои электронӣ</div>
+        <div class="footer-links">
+          <a href="{{ url_for('index') }}">Саҳифаи асосӣ</a>
+          <a href="{{ url_for('materials') }}">Маводҳо</a>
+          {% if not session.get('user_id') %}
+            <a href="{{ url_for('register') }}">Қайд кардан</a>
+          {% endif %}
+        </div>
+        <div class="footer-copy">© 2026 Китобхона. Ҳамаи ҳуқуқҳо маҳфузанд. Офарандаи барномаи веб Ҳасанов Ҳалимҷон аст.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
