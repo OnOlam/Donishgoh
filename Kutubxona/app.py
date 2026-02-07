@@ -716,15 +716,19 @@ def internal_error(e):
 # DASTURNI ISHGA TUSHIRISH
 # ========================
 if __name__ == "__main__":
-    
-    # Ma'lumotlar bazasini yaratish
+    import os
+    import logging
+
     init_db()
-    
-    # Environment variables
-    port = int(os.environ.get('PORT', 8080))
-    host = os.environ.get('HOST', '0.0.0.0')
-    debug = os.environ.get('FLASK_ENV') != 'production'
-    
-    # Serverni ishga tushirish
-    logging.info(f"🚀 Server starting on {host}:{port} (debug={debug})")
-    app.run(host=host, port=port, debug=debug)
+
+    port = int(os.environ["PORT"])  # Railway bergan portni majburiy olamiz
+    host = "0.0.0.0"
+
+    logging.info(f"🚀 Server starting on {host}:{port}")
+
+    app.run(
+        host=host,
+        port=port,
+        debug=False,
+        use_reloader=False
+    )
