@@ -715,20 +715,7 @@ def internal_error(e):
 # ========================
 # DASTURNI ISHGA TUSHIRISH
 # ========================
-if __name__ == "__main__":
-    import os
-    import logging
-
-    init_db()
-
-    port = int(os.environ["PORT"])  # Railway bergan portni majburiy olamiz
-    host = "0.0.0.0"
-
-    logging.info(f"🚀 Server starting on {host}:{port}")
-
-    app.run(
-        host=host,
-        port=port,
-        debug=False,
-        use_reloader=False
-    )
+if __name__ == '__main__':
+    # Development
+    port = int(os.environ.get("PORT", 8090))
+    app.run(host="0.0.0.0", port=port)
