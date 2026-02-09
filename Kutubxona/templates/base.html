@@ -23,7 +23,7 @@
           {% endif %}
           
           <a class="btn" href="{{ url_for('index') }}">Саҳифаи асосӣ</a>
-          <a class="btn" href="{{ url_for('materials') }}">Маводҳо</a>
+          <a class="btn" href="{{ url_for('/materials') }}">Маводҳо</a>
           
           {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
             <a class="btn btn-admin" href="{{ url_for('admin') }}">⚙️ Администратор</a>
