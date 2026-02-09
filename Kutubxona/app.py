@@ -15,11 +15,30 @@ logging.basicConfig(
 # ========================
 # KONFIGURATSIYA
 # ========================
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+# UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-DB_PATH = os.path.join(BASE_DIR, 'data.db')
+# DB_PATH = os.path.join(BASE_DIR, 'data.db')
+
+IS_PRODUCTION = any([
+    os.environ.get('RAILWAY_ENVIRONMENT'),
+    os.environ.get('DYNO'),  # Heroku
+    os.environ.get('PORT') and not os.environ.get('FLASK_ENV') == 'development'
+])
+
+if IS_PRODUCTION:
+    # 🌐 PRODUCTION: /tmp ga saqlash (faqat bu yerda yozish mumkin!)
+    DB_PATH = '/tmp/data.db'
+    UPLOAD_FOLDER = '/tmp/uploads'
+else:
+    # 💻 DEVELOPMENT: lokal papkaga
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+    DB_PATH = os.path.join(BASE_DIR, 'data.db')
+
+# Papkalarni yaratish (har doim)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -47,7 +66,7 @@ ALLOWED_EXTENSIONS = {
 # ========================
 def get_db():
     """Ma'lumotlar bazasiga ulanish"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -112,12 +131,29 @@ def init_db():
         cur.execute("INSERT INTO users (name, email, password, admin_level) VALUES (?,?,?,?)",
                     ("Сардори админ", "admin@local", generate_password_hash("admin123"), 2))
         db.commit()
-        print("✅ Сардори маъмурӣ: admin@local / admin123")
+        print(f"✅ Admin yaratildi! DB: {DB_PATH}")
     except sqlite3.IntegrityError:
         # Agar admin allaqachon mavjud bo'lsa, xatolikni e'tiborsiz qoldirish
         pass
     
     db.close()
+    print(f"✅ Database tayyor: {DB_PATH}")
+        return True
+    except Exception as e:
+        print(f"❌ Database xatosi: {str(e)} | Yo'l: {DB_PATH}")
+        logging.error(f"init_db failed: {e}", exc_info=True)
+        return False
+
+# ========================
+# MUHITNI TEKSHIRISH VA AVTOMATIK ISHGA TUSHIRISH
+# ========================
+print(f"🌍 Muhit: {'PRODUCTION (Railway/Heroku)' if IS_PRODUCTION else 'DEVELOPMENT'}")
+print(f"📁 DB yo'li: {DB_PATH}")
+print(f"📤 Upload papka: {UPLOAD_FOLDER}")
+
+# HAR DOIM ishga tushirish (WSGI uchun muhim)
+if not init_db():
+    print("⚠️  OGHLANISH: Database ishga tushirilmadi! Lekin ilova davom etadi...")
 
 # ========================
 # HELPER FUNKSIYALAR
@@ -174,26 +210,33 @@ def allowed_file(filename, material_type):
     return ext in ALLOWED_EXTENSIONS.get(material_type, set())
 
 # ========================
-# DATABASE NI ISHGA TUSHIRISH (WSGI MUHITLAR UCHUN MUHIM!)
-# ========================
-# Bu qator HAR DOIM ishlaydi: Gunicorn, uWSGI, Railway, Heroku da ham
-init_db()
-
-# ========================
 # UMUMIY SAHIFALAR
 # ========================
 @app.route("/")
 def index():
-    """Bosh sahifa - statistika bilan"""
-    db = get_db()
-    stats = {
-        'books': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='book'").fetchone()['c'],
-        'apps': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='app'").fetchone()['c'],
-        'images': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='image'").fetchone()['c'],
-        'videos': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='video'").fetchone()['c'],
-    }
-    db.close()
-    return render_template("index.html", stats=stats)
+    """Bosh sahifa - statistika bilan (xavfsiz tekshiruv)"""
+    try:
+        db = get_db()
+        # Jadvallar mavjudligini tekshirish
+        cur = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='materials'")
+        if not cur.fetchone():
+            db.close()
+            print("⚠️  materials jadvali topilmadi! Qayta ishga tushirilmoqda...")
+            init_db()  # Qayta urinish
+            db = get_db()
+        
+        stats = {
+            'books': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='book'").fetchone()['c'],
+            'apps': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='app'").fetchone()['c'],
+            'images': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='image'").fetchone()['c'],
+            'videos': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='video'").fetchone()['c'],
+        }
+        db.close()
+        return render_template("index.html", stats=stats)
+    except Exception as e:
+        logging.error(f"Index xatosi: {e}")
+        flash("⚠️ Tizimda vaqtinchalik muammo. Iltimos, sahifani yangilang.")
+        return render_template("index.html", stats={'books':0, 'apps':0, 'images':0, 'videos':0})
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -704,6 +747,33 @@ def book_detail(book_id):
     """Eski /book/<id> linki -> yangi material/<id> ga yo'naltirish"""
     return redirect(url_for('material_detail', material_id=book_id))
 
+
+# ========================
+# HEALTH CHECK (DEPLOYMENT UCHUN MUHIM)
+# ========================
+@app.route("/health")
+def health_check():
+    """Railway/Heroku uchun health check + avtomatik tuzatish"""
+    try:
+        db = get_db()
+        # Jadvallarni tekshirish
+        tables = db.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name IN ('users', 'materials')
+        """).fetchall()
+        
+        if len(tables) < 2:
+            db.close()
+            print("🏥 Health check: Database yetarli emas, qayta ishga tushirilmoqda...")
+            init_db()
+            return jsonify({"status": "reinitialized"}), 200
+        
+        db.close()
+        return jsonify({"status": "healthy", "db_path": DB_PATH}), 200
+    except Exception as e:
+        logging.error(f"Health check xatosi: {e}")
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
 # ========================
 # XATOLIK SAHIFALARI
 # ========================
@@ -724,13 +794,8 @@ def internal_error(e):
 # DASTURNI ISHGA TUSHIRISH
 # ========================
 if __name__ == "__main__":
-    # init_db() endi modul yuklanganda avtomatik ishlaydi (yuqorida chaqirilgan)
-    
-    # Environment variables
     port = int(os.environ.get('PORT', 5050))
     host = os.environ.get('HOST', '0.0.0.0')
-    debug = os.environ.get('FLASK_ENV') != 'production'
-    
-    # Serverni ishga tushirish
-    logging.info(f"🚀 Server starting on {host}:{port} (debug={debug})")
+    debug = not IS_PRODUCTION
+    logging.info(f"🚀 Server {host}:{port} da ishga tushdi (debug={debug})")
     app.run(host=host, port=port, debug=debug)
