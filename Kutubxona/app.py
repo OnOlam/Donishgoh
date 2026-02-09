@@ -768,6 +768,16 @@ def health_check():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
+# app.py ga qo'shing (material_detail.html va index.html uchun)
+@app.route('/cover/<path:filename>')
+def cover_image(filename):
+    try:
+        return send_from_directory(app.config['COVER_FOLDER'], filename)
+    except Exception as e:
+        # Agar rasm yo'q bo'lsa, placeholder qaytarish
+        return send_from_directory(app.config['UPLOAD_FOLDER'], 'placeholder.jpg')
+
+
 # ... [Boshqa routelar (books, book_detail, error handlers) oldingidek] ...
 @app.route("/books")
 def books():
