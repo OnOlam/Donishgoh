@@ -2,12 +2,19 @@
 {% block content %}
 
 <div class="detail-container">
+  <!-- MUQOVA RASMI (Yangi) -->
+  {% if material.cover_image %}
+  <div class="cover-preview">
+    <img src="{{ url_for('cover_image', filename=material.cover_image) }}" alt="{{ material.title }}">
+  </div>
+  {% endif %}
+
   <div class="detail-header">
     <div class="detail-type-badge">
-      {% if material.material_type == 'book' %}📚 Китоб
-      {% elif material.material_type == 'app' %}📱 Барнома
-      {% elif material.material_type == 'image' %}🖼️ Расм
-      {% elif material.material_type == 'video' %}🎬 Видео
+      {% if material.material_type == 'book' %}📚 {{ _('books_label') }}
+      {% elif material.material_type == 'app' %}📱 {{ _('apps_label') }}
+      {% elif material.material_type == 'image' %}🖼️ {{ _('images_label') }}
+      {% elif material.material_type == 'video' %}🎬 {{ _('videos_label') }}
       {% endif %}
     </div>
     <h2 class="detail-title">{{ material.title }}</h2>
@@ -17,76 +24,104 @@
     <div class="detail-main">
       {% if material.author %}
         <div class="detail-info-row">
-          <span class="info-label">👤 Муаллиф/Офаридгор:</span>
+          <span class="info-label">👤 {{ _('author') }}:</span>
           <span class="info-value">{{ material.author }}</span>
         </div>
       {% endif %}
 
       {% if uploader %}
         <div class="detail-info-row">
-          <span class="info-label">📤 Боргузорӣ аз ҷониби:</span>
+          <span class="info-label">📤 {{ _('uploaded_by') }}:</span>
           <span class="info-value">{{ uploader.name }}</span>
         </div>
       {% endif %}
 
       {% if material.created_at %}
         <div class="detail-info-row">
-          <span class="info-label">📅 Санаи боргузорӣ:</span>
+          <span class="info-label">📅 {{ _('upload_date') }}:</span>
           <span class="info-value">{{ material.created_at[:10] }} {{ material.created_at[11:16] }}</span>
         </div>
       {% endif %}
 
       <div class="detail-info-row">
-        <span class="info-label">👁️ Дида шуд:</span>
-        <span class="info-value">{{ material.view_count }} маротиба</span>
+        <span class="info-label">👁️ {{ _('views') }}:</span>
+        <span class="info-value">{{ material.view_count }} {{ _('times') }}</span>
       </div>
 
       <div style="height:24px"></div>
 
       <div class="detail-description-section">
-        <h4>📝 Тавсиф</h4>
+        <h4>📝 {{ _('description') }}</h4>
         <div class="detail-description">
-          {{ material.description if material.description else "Тавсиф дастрас нест." }}
+          {{ material.description if material.description else _("no_description") }}
         </div>
       </div>
 
       <div style="height:24px"></div>
 
+      <!-- AMALLAR (Onlayn o'qish qo'shildi) -->
       <div class="detail-actions">
-        {% if material.filename %}
-          <a class="btn btn-large btn-download" href="{{ url_for('download_file', filename=material.filename) }}">
-            ⬇️ Боргирӣ
-          </a>
+        {% if material.filename and material.material_type == 'book' and '.pdf' in material.filename.lower() %}
+          {% if session.get('user_id') %}
+            <a class="btn btn-large btn-view" href="{{ url_for('view_file', filename=material.filename) }}" target="_blank">
+              👁️ {{ _('read_online') }}
+            </a>
+            <a class="btn btn-large btn-download" href="{{ url_for('download_file', filename=material.filename) }}">
+              ⬇️ {{ _('download') }}
+            </a>
+          {% else %}
+            <a class="btn btn-large btn-download" href="{{ url_for('login', next=request.path) }}">
+              🔒 {{ _('login_to_download') }}
+            </a>
+          {% endif %}
+        {% elif material.filename %}
+          {% if session.get('user_id') %}
+            <a class="btn btn-large btn-download" href="{{ url_for('download_file', filename=material.filename) }}">
+              ⬇️ {{ _('download') }}
+            </a>
+          {% else %}
+            <a class="btn btn-large btn-download" href="{{ url_for('login', next=request.path) }}">
+              🔒 {{ _('login_to_download') }}
+            </a>
+          {% endif %}
         {% else %}
           <div class="no-file-notice">
-            ⚠️ Файл боргузорӣ нашудааст
+            ⚠️ {{ _('file_not_uploaded') }}
           </div>
         {% endif %}
 
         <a class="btn btn-secondary" href="{{ url_for('materials', material_type=material.material_type) }}">
-          ← Баргашт
+          ← {{ _('back') }}
         </a>
       </div>
     </div>
 
+    <!-- SIDEBAR (Muqova ko'rsatish) -->
     <div class="detail-sidebar">
+      {% if material.cover_image %}
+      <div class="sidebar-card cover-card">
+        <h4>🖼️ {{ _('cover_label') }}</h4>
+        <img src="{{ url_for('cover_image', filename=material.cover_image) }}" alt="Cover" class="sidebar-cover">
+      </div>
+      {% endif %}
+      
       <div class="sidebar-card">
-        <h4>ℹ️ Маълумоти Иловагӣ</h4>
+        <h4>ℹ️ {{ _('additional_info') }}</h4>
         
         {% if material.filename %}
           <div class="sidebar-info">
-            <span class="sidebar-label">📎 Файл:</span>
+            <span class="sidebar-label">📎 {{ _('file') }}:</span>
             <span class="sidebar-value">{{ material.filename }}</span>
           </div>
         {% endif %}
 
         <div class="sidebar-info">
-          <span class="sidebar-label">🏷️ Навъ:</span>
+          <span class="sidebar-label">🏷️ {{ _('type') }}:</span>
           <span class="sidebar-value">
-            {% if material.material_type == 'book' %}Китоб
-            {% elif material.material_type == 'app' %}Барнома
-            {% elif material.material_type == 'image' %}Расм
-            {% elif material.material_type == 'video' %}Видео
+            {% if material.material_type == 'book' %}{{ _('books_label') }}
+            {% elif material.material_type == 'app' %}{{ _('apps_label') }}
+            {% elif material.material_type == 'image' %}{{ _('images_label') }}
+            {% elif material.material_type == 'video' %}{{ _('videos_label') }}
             {% endif %}
           </span>
         </div>
@@ -97,30 +132,39 @@
         </div>
       </div>
 
+      <!-- ADMIN AMALLARI (O'zgarmagan) -->
       {% if session.get('admin_level') and session.get('admin_level') >= 1 %}
         <div class="sidebar-card admin-actions">
-          <h4>⚙️ Амалҳои администратор</h4>
+          <h4>⚙️ {{ _('admin_actions') }}</h4>
           
           {% if session.get('admin_level') == 2 or material.uploaded_by == session.get('user_id') %}
             <a class="btn btn-edit" href="{{ url_for('admin_edit_material', material_id=material.id) }}">
-              ✏️ Таҳрир
+              ✏️ {{ _('edit') }}
             </a>
             
             <a class="btn btn-stats" href="{{ url_for('admin_material_stats', material_id=material.id) }}">
-              📊 Омор
+              📊 {{ _('statistics') }}
             </a>
             
             <a class="btn btn-delete" href="{{ url_for('admin_delete_material', material_id=material.id) }}" 
-               onclick="return confirm('Маводро нест кардан даркорми?')">
-              🗑️ Нест кардан
+               onclick="return confirm('{{ _('confirm_delete') }}')">
+              🗑️ {{ _('delete') }}
             </a>
           {% else %}
-            <p class="small">Шумо танҳо метавонед маводҳои худро назорат кунед.</p>
+            <p class="small">{{ _('only_your_materials') }}</p>
           {% endif %}
         </div>
       {% endif %}
     </div>
   </div>
 </div>
+
+<style>
+.cover-preview { width:100%; max-height:400px; overflow:hidden; margin-bottom:24px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+.cover-preview img { width:100%; height:auto; display:block; }
+.sidebar-cover { width:100%; border-radius:8px; margin-top:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.btn-view { background:#4361ee; margin-right:10px; }
+.btn-view:hover { background:#3a56d4; }
+</style>
 
 {% endblock %}
