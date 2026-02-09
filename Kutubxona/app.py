@@ -319,7 +319,7 @@ def init_db():
             pass
         
         db.close()
-        print(f"✅ Database tayyor: {DB_PATH} | Til: {get_locale()}")
+        print(f"✅ Database tayyor: {DB_PATH} | Til: {DEFAULT_LANG}")
         return True
     except Exception as e:
         print(f"❌ Database xatosi: {str(e)}")
@@ -570,7 +570,23 @@ def login():
     
     return render_template("login.html", _=_)
 
-# ... [logout, materials, material_detail funksiyalari yangilandi] ...
+@app.route("/materials")
+@app.route("/materials/<material_type>")
+def materials(material_type=None):
+    """Barcha materiallar yoki turga qarab"""
+    db = get_db()
+    
+    if material_type and material_type in ['book', 'app', 'image', 'video']:
+        rows = db.execute(
+            "SELECT * FROM materials WHERE material_type=? ORDER BY id DESC", 
+            (material_type,)
+        ).fetchall()
+    else:
+        rows = db.execute("SELECT * FROM materials ORDER BY id DESC").fetchall()
+    
+    db.close()
+    return render_template("materials.html", materials=rows, current_type=material_type)
+
 @app.route("/material/<int:material_id>")
 def material_detail(material_id):
     db = get_db()
@@ -620,6 +636,28 @@ def view_file(filename):
 # ========================
 # ADMIN FUNKSIYALARI (YANGILANGAN)
 # ========================
+@app.route("/admin")
+@admin_required
+def admin():
+    """Admin paneli"""
+    user = current_user()
+    db = get_db()
+    
+    # Oddiy admin faqat o'z materiallarini ko'radi
+    if user['admin_level'] == 1:
+        materials = db.execute(
+            "SELECT * FROM materials WHERE uploaded_by=? ORDER BY id DESC", 
+            (user['id'],)
+        ).fetchall()
+        users = []
+    else:
+        # Bosh admin hamma narsani ko'radi
+        materials = db.execute("SELECT * FROM materials ORDER BY id DESC").fetchall()
+        users = db.execute("SELECT * FROM users ORDER BY id ASC").fetchall()
+    
+    db.close()
+    return render_template("admin.html", users=users, materials=materials, user=user)
+
 @app.route("/admin/add", methods=["POST"])
 @admin_required
 def admin_add_material():
@@ -682,7 +720,6 @@ def admin_add_material():
     flash("✅ Material qo'shildi")
     return redirect(url_for('admin'))
 
-# ... [admin_edit_material funksiyasi ham cover_image ni yangilaydi] ...
 @app.route("/admin/material/<int:material_id>/edit", methods=["GET", "POST"])
 @admin_required
 def admin_edit_material(material_id):
@@ -762,7 +799,6 @@ def admin_edit_material(material_id):
     db.close()
     return render_template("admin_edit_material.html", material=material, _=_)
 
-# ... [Qolgan funksiyalar (admin_delete, notifications, health va boshqalar) oldingidek] ...
 @app.route("/admin/material/<int:material_id>/delete")
 @admin_required
 def admin_delete_material(material_id):
@@ -798,6 +834,109 @@ def admin_delete_material(material_id):
     flash("✅ Material o'chirildi")
     return redirect(url_for('admin'))
 
+@app.route("/admin/material/<int:material_id>/stats")
+@admin_required
+def admin_material_stats(material_id):
+    """Material statistikasi"""
+    user = current_user()
+    db = get_db()
+    
+    material = db.execute("SELECT * FROM materials WHERE id=?", (material_id,)).fetchone()
+    
+    if not material:
+        db.close()
+        abort(404)
+    
+    # Oddiy admin faqat o'z statistikasini ko'radi
+    if user['admin_level'] == 1 and material['uploaded_by'] != user['id']:
+        flash("⚠️ Шумо фақат омори маводи худатонро дида метавонед")
+        db.close()
+        return redirect(url_for('admin'))
+    
+    # Ko'rishlar tarixini olish
+    views = db.execute("""
+        SELECT view_history.*, users.name 
+        FROM view_history 
+        LEFT JOIN users ON view_history.user_id = users.id
+        WHERE material_id=? 
+        ORDER BY viewed_at DESC
+    """, (material_id,)).fetchall()
+    
+    db.close()
+    return render_template("admin_material_stats.html", material=material, views=views)
+
+# ========================
+# FOYDALANUVCHILARNI BOSHQARISH (FAQAT BOSH ADMIN)
+# ========================
+@app.route("/admin/user/<int:user_id>/toggle")
+@main_admin_required
+def admin_toggle_user(user_id):
+    """Foydalanuvchini admin qilish yoki adminlikni olish"""
+    db = get_db()
+    target_user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    
+    if not target_user:
+        db.close()
+        flash("❌ Корбар ёфт нашуд")
+        return redirect(url_for('admin'))
+    
+    # O'zini o'zgartira olmaydi
+    if target_user['id'] == session['user_id']:
+        db.close()
+        flash("⚠️ Шумо наметавонед худро тағир диҳед")
+        return redirect(url_for('admin'))
+    
+    # Boshqa bosh adminni o'zgartira olmaydi
+    if target_user['admin_level'] == 2:
+        db.close()
+        flash("⚠️ Шумо дигар администратори асосиро иваз карда наметавонед")
+        return redirect(url_for('admin'))
+    
+    # Toggle admin status (0 <-> 1)
+    new_level = 1 if target_user['admin_level'] == 0 else 0
+    db.execute("UPDATE users SET admin_level=? WHERE id=?", (new_level, user_id))
+    db.commit()
+    db.close()
+    
+    if new_level == 1:
+        flash(f"✅ {target_user['name']} администратори оддӣ анҷом дода шуд")
+    else:
+        flash(f"✅ {target_user['name']} истифодабарандаи доимӣ гардид")
+    
+    return redirect(url_for('admin'))
+
+@app.route("/admin/notify/<int:user_id>", methods=["GET", "POST"])
+@main_admin_required
+def admin_notify_user(user_id):
+    """Foydalanuvchiga xabar yuborish"""
+    db = get_db()
+    target_user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    
+    if not target_user:
+        db.close()
+        abort(404)
+    
+    if request.method == "POST":
+        title = request.form.get('title', '').strip()
+        message = request.form.get('message', '').strip()
+        
+        if not title or not message:
+            flash("❌ Сарлавҳа ва паём лозим аст")
+            return redirect(url_for('admin_notify_user', user_id=user_id))
+        
+        db.execute(
+            "INSERT INTO notifications (user_id, title, message, created_at) VALUES (?,?,?,?)",
+            (user_id, title, message, datetime.datetime.utcnow().isoformat())
+        )
+        db.commit()
+        db.close()
+        
+        flash(f"✅ {target_user['name']}ga xabar yuborildi")
+        return redirect(url_for('admin'))
+    
+    db.close()
+    return render_template("admin_notify.html", user=target_user)
+
 @app.route("/notifications")
 @login_required
 def notifications():
@@ -805,6 +944,33 @@ def notifications():
     notes = db.execute("SELECT * FROM notifications WHERE user_id=? ORDER BY id DESC", (session['user_id'],)).fetchall()
     db.close()
     return render_template("notifications.html", notes=notes, _=_)
+
+@app.route("/notify/reply", methods=["POST"])
+@login_required
+def notify_reply():
+    """Adminga javob yuborish (hozircha ishlatilmaydi)"""
+    text = request.form.get('text', '').strip()
+    
+    if not text:
+        flash("❌ Матни хабар бояд ворид карда шавад")
+        return redirect(url_for('notifications'))
+    
+    db = get_db()
+    # Bosh adminga xabar yuborish (user_id=1)
+    db.execute(
+        "INSERT INTO notifications (user_id, title, message, created_at) VALUES (?,?,?,?)",
+        (1, f"Javоб: {session.get('user_name')}", text, datetime.datetime.utcnow().isoformat())
+    )
+    db.commit()
+    db.close()
+    
+    flash("✅ Ҷавоб фиристода шуд")
+    return redirect(url_for('notifications'))
+
+@app.route("/api/tutorial-seen", methods=["POST"])
+def tutorial_seen():
+    """Tutorial ko'rilganini belgilash"""
+    return jsonify({"status": "ok"})
 
 @app.route("/health")
 def health_check():
