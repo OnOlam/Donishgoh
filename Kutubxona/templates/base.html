@@ -59,6 +59,22 @@
 
     {% block content %}{% endblock %}
 
+    <!-- base.html ning oxiriga qo'shing -->
+<div class="language-switcher">
+  {% for code, name in LANGUAGES.items() %}
+    <a href="{{ url_for('set_language', lang_code=code) }}" 
+       class="lang-btn {% if get_locale() == code %}active{% endif %}">
+      {{ name }}
+    </a>
+  {% endfor %}
+</div>
+
+<style>
+.language-switcher { position:fixed; bottom:20px; right:20px; display:flex; gap:8px; z-index:1000; }
+.lang-btn { background:#4a6fa5; color:white; padding:8px 16px; border-radius:20px; text-decoration:none; font-weight:bold; }
+.lang-btn.active { background:#2c3e50; transform:scale(1.05); }
+</style>
+
     <div class="footer">
       <div class="footer-content">
         <div>📚 Китобхона — Платформаи захираҳои электронӣ</div>
