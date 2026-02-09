@@ -104,7 +104,7 @@ def _(text):
             'books_label': 'Kitoblar',
             'apps_label': 'Ilovalar',
             'images_label': 'Rasmlar',
-            'videos_label': 'Videolar'
+            'videos_label': 'Videolar',
             'welcome': 'Xush kelibsiz',
             'about_site': 'Sayt haqida',
             'tutorial_step1': 'Ushbu platformada kitoblar, ilovalar, rasmlar va videolarni topishingiz mumkin. Har bir materialga statistik kartalardan foydalaning.',
