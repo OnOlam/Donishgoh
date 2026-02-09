@@ -13,7 +13,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
-
 # Logging sozlash
 logging.basicConfig(
     level=logging.INFO,
@@ -38,9 +37,8 @@ else:
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     COVER_FOLDER = os.path.join(BASE_DIR, 'covers')
     DB_PATH = os.path.join(BASE_DIR, 'data.db')
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(COVER_FOLDER, exist_ok=True)
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(COVER_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -80,8 +78,15 @@ ALLOWED_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
 # YORDAMCHI FUNKSIYALAR
 # ========================
 def get_locale():
-    """Foydalanuvchi tilini olish"""
-    return session.get('lang', request.accept_languages.best_match(LANGUAGES.keys()) or DEFAULT_LANG)
+    """Foydalanuvchi tilini olish (request kontekstini tekshiradi)"""
+    try:
+        if 'lang' in session:
+            return session['lang']
+        if request and request.accept_languages:
+            return request.accept_languages.best_match(LANGUAGES.keys()) or DEFAULT_LANG
+        return DEFAULT_LANG
+    except:
+        return DEFAULT_LANG
 
 def _(text):
     """Oddiy tarjima funksiyasi (haqiqiy loyihada Flask-Babel ishlatish tavsiya etiladi)"""
@@ -206,22 +211,23 @@ def send_verification_email(email, token, is_reset=False):
         msg = MIMEMultipart()
         msg['From'] = SMTP_USER
         msg['To'] = email
+        
         if is_reset:
             msg['Subject'] = _("Parolni tiklash")
             body = f"""<html><body>
-                <h2>Parolni tiklash</h2>
-                <p>Quyidagi havolani bosing:</p>
-                <a href="{request.url_root}reset-password/{token}">Parolni tiklash</a>
-                <p>Havola 1 soat amal qiladi.</p>
-                <p>Agar siz so'rov yubormagan bo'lsangiz, bu xabarni e'tiborsiz qoldiring.</p>
+            <h2>Parolni tiklash</h2>
+            <p>Quyidagi havolani bosing:</p>
+            <a href="{request.url_root}reset-password/{token}">Parolni tiklash</a>
+            <p>Havola 1 soat amal qiladi.</p>
+            <p>Agar siz so'rov yubormagan bo'lsangiz, bu xabarni e'tiborsiz qoldiring.</p>
             </body></html>"""
         else:
             msg['Subject'] = _("Emailni tasdiqlash")
             body = f"""<html><body>
-                <h2>Ro'yxatdan o'tishni tasdiqlang</h2>
-                <p>Quyidagi havolani bosing:</p>
-                <a href="{request.url_root}verify-email/{token}">Emailni tasdiqlash</a>
-                <p>Agar siz ro'yxatdan o'tmagansiz, bu xabarni e'tiborsiz qoldiring.</p>
+            <h2>Ro'yxatdan o'tishni tasdiqlang</h2>
+            <p>Quyidagi havolani bosing:</p>
+            <a href="{request.url_root}verify-email/{token}">Emailni tasdiqlash</a>
+            <p>Agar siz ro'yxatdan o'tmagansiz, bu xabarni e'tiborsiz qoldiring.</p>
             </body></html>"""
         
         msg.attach(MIMEText(body, 'html'))
@@ -331,6 +337,14 @@ print(f"📁 DB: {DB_PATH}")
 init_db()
 
 # ========================
+# CONTEXT PROCESSOR (MUHIM!)
+# ========================
+@app.context_processor
+def inject_languages():
+    """Barcha templatega LANGUAGES o'zgaruvchisini qo'shadi"""
+    return dict(LANGUAGES=LANGUAGES)
+
+# ========================
 # DECORATORLAR
 # ========================
 def current_user():
@@ -351,7 +365,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrap
 
-# ... [admin_required, main_admin_required funksiyalari oldingidek qoladi] ...
 def admin_required(f):
     from functools import wraps
     @wraps(f)
@@ -393,18 +406,18 @@ def index():
     search_query = request.args.get('q', '').strip()
     if search_query:
         materials = db.execute("""
-            SELECT * FROM materials 
-            WHERE material_type='book' 
-            AND (title LIKE ? OR author LIKE ?)
-            ORDER BY id DESC
+        SELECT * FROM materials
+        WHERE material_type='book'
+        AND (title LIKE ? OR author LIKE ?)
+        ORDER BY id DESC
         """, (f'%{search_query}%', f'%{search_query}%')).fetchall()
         if not materials:
             flash(_("no_results"))
     else:
         materials = db.execute("""
-            SELECT * FROM materials 
-            WHERE material_type='book' 
-            ORDER BY id DESC LIMIT 20
+        SELECT * FROM materials
+        WHERE material_type='book'
+        ORDER BY id DESC LIMIT 20
         """).fetchall()
     
     stats = {
@@ -415,9 +428,9 @@ def index():
     }
     db.close()
     return render_template(
-        "index.html", 
-        stats=stats, 
-        materials=materials, 
+        "index.html",
+        stats=stats,
+        materials=materials,
         search_query=search_query,
         _=_
     )
@@ -444,8 +457,8 @@ def register():
             # Avval foydalanuvchini yaratamiz, lekin email tasdiqlanmaguncha faol emas
             token = secrets.token_urlsafe(32)
             db.execute("""
-                INSERT INTO users (name, email, password, admin_level, email_verified, reset_token) 
-                VALUES (?,?,?,?,?,?)
+            INSERT INTO users (name, email, password, admin_level, email_verified, reset_token)
+            VALUES (?,?,?,?,?,?)
             """, (name, email, generate_password_hash(password), 0, 0, token))
             db.commit()
             
@@ -505,14 +518,12 @@ def forgot_password():
         db.close()
         flash("✅ Agar email mavjud bo'lsa, ko'rsatmalar yuborildi.")
         return redirect(url_for('forgot_password'))
-    
     return render_template("forgot_password.html", _=_)
 
 @app.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE reset_token=?", (token,)).fetchone()
-    
     if not user:
         db.close()
         flash(_("invalid_token"))
@@ -529,17 +540,15 @@ def reset_password(token):
     if request.method == "POST":
         password = request.form.get('password', '')
         confirm = request.form.get('confirm', '')
-        
         if password != confirm:
             flash("❌ Parollar mos kelmaydi")
             return redirect(url_for('reset_password', token=token))
-        
         if len(password) < 8:
             flash("❌ Parol kamida 8 belgidan iborat bo'lishi kerak")
             return redirect(url_for('reset_password', token=token))
         
-        db.execute("UPDATE users SET password=?, reset_token=NULL, reset_expires=NULL WHERE id=?", 
-                  (generate_password_hash(password), user['id']))
+        db.execute("UPDATE users SET password=?, reset_token=NULL, reset_expires=NULL WHERE id=?",
+                   (generate_password_hash(password), user['id']))
         db.commit()
         db.close()
         flash(_("password_updated"))
@@ -582,15 +591,13 @@ def login():
 def materials(material_type=None):
     """Barcha materiallar yoki turga qarab"""
     db = get_db()
-    
     if material_type and material_type in ['book', 'app', 'image', 'video']:
         rows = db.execute(
-            "SELECT * FROM materials WHERE material_type=? ORDER BY id DESC", 
+            "SELECT * FROM materials WHERE material_type=? ORDER BY id DESC",
             (material_type,)
         ).fetchall()
     else:
         rows = db.execute("SELECT * FROM materials ORDER BY id DESC").fetchall()
-    
     db.close()
     return render_template("materials.html", materials=rows, current_type=material_type)
 
@@ -617,8 +624,8 @@ def material_detail(material_id):
     uploader = None
     if material['uploaded_by']:
         uploader = db.execute("SELECT name FROM users WHERE id=?", (material['uploaded_by'],)).fetchone()
-    
     db.close()
+    
     return render_template("material_detail.html", material=material, uploader=uploader, _=_)
 
 @app.route("/download/<path:filename>")
@@ -649,11 +656,10 @@ def admin():
     """Admin paneli"""
     user = current_user()
     db = get_db()
-    
     # Oddiy admin faqat o'z materiallarini ko'radi
     if user['admin_level'] == 1:
         materials = db.execute(
-            "SELECT * FROM materials WHERE uploaded_by=? ORDER BY id DESC", 
+            "SELECT * FROM materials WHERE uploaded_by=? ORDER BY id DESC",
             (user['id'],)
         ).fetchall()
         users = []
@@ -661,7 +667,6 @@ def admin():
         # Bosh admin hamma narsani ko'radi
         materials = db.execute("SELECT * FROM materials ORDER BY id DESC").fetchall()
         users = db.execute("SELECT * FROM users ORDER BY id ASC").fetchall()
-    
     db.close()
     return render_template("admin.html", users=users, materials=materials, user=user)
 
@@ -717,9 +722,9 @@ def admin_add_material():
     # Ma'lumotlar bazasiga qo'shish
     db = get_db()
     db.execute("""
-        INSERT INTO materials (title, author, description, filename, cover_image, material_type, created_at, uploaded_by) 
-        VALUES (?,?,?,?,?,?,?,?)
-    """, (title, author, description, filename, cover_filename, material_type, 
+    INSERT INTO materials (title, author, description, filename, cover_image, material_type, created_at, uploaded_by)
+    VALUES (?,?,?,?,?,?,?,?)
+    """, (title, author, description, filename, cover_filename, material_type,
           datetime.datetime.utcnow().isoformat(), user['id']))
     db.commit()
     db.close()
@@ -795,11 +800,11 @@ def admin_edit_material(material_id):
         
         # Ma'lumotlarni yangilash
         db.execute("""
-            UPDATE materials SET title=?, author=?, description=? WHERE id=?
+        UPDATE materials SET title=?, author=?, description=? WHERE id=?
         """, (title, author, description, material_id))
-        
         db.commit()
         db.close()
+        
         flash("✅ Material tahrirlandi")
         return redirect(url_for('admin'))
     
@@ -847,9 +852,7 @@ def admin_material_stats(material_id):
     """Material statistikasi"""
     user = current_user()
     db = get_db()
-    
     material = db.execute("SELECT * FROM materials WHERE id=?", (material_id,)).fetchone()
-    
     if not material:
         db.close()
         abort(404)
@@ -862,14 +865,14 @@ def admin_material_stats(material_id):
     
     # Ko'rishlar tarixini olish
     views = db.execute("""
-        SELECT view_history.*, users.name 
-        FROM view_history 
-        LEFT JOIN users ON view_history.user_id = users.id
-        WHERE material_id=? 
-        ORDER BY viewed_at DESC
+    SELECT view_history.*, users.name
+    FROM view_history
+    LEFT JOIN users ON view_history.user_id = users.id
+    WHERE material_id=?
+    ORDER BY viewed_at DESC
     """, (material_id,)).fetchall()
-    
     db.close()
+    
     return render_template("admin_material_stats.html", material=material, views=views)
 
 # ========================
@@ -881,7 +884,6 @@ def admin_toggle_user(user_id):
     """Foydalanuvchini admin qilish yoki adminlikni olish"""
     db = get_db()
     target_user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    
     if not target_user:
         db.close()
         flash("❌ Корбар ёфт нашуд")
@@ -909,7 +911,6 @@ def admin_toggle_user(user_id):
         flash(f"✅ {target_user['name']} администратори оддӣ анҷом дода шуд")
     else:
         flash(f"✅ {target_user['name']} истифодабарандаи доимӣ гардид")
-    
     return redirect(url_for('admin'))
 
 @app.route("/admin/notify/<int:user_id>", methods=["GET", "POST"])
@@ -918,7 +919,6 @@ def admin_notify_user(user_id):
     """Foydalanuvchiga xabar yuborish"""
     db = get_db()
     target_user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    
     if not target_user:
         db.close()
         abort(404)
@@ -926,7 +926,6 @@ def admin_notify_user(user_id):
     if request.method == "POST":
         title = request.form.get('title', '').strip()
         message = request.form.get('message', '').strip()
-        
         if not title or not message:
             flash("❌ Сарлавҳа ва паём лозим аст")
             return redirect(url_for('admin_notify_user', user_id=user_id))
@@ -957,7 +956,6 @@ def notifications():
 def notify_reply():
     """Adminga javob yuborish (hozircha ishlatilmaydi)"""
     text = request.form.get('text', '').strip()
-    
     if not text:
         flash("❌ Матни хабар бояд ворид карда шавад")
         return redirect(url_for('notifications'))
@@ -1000,7 +998,6 @@ def cover_image(filename):
     except Exception as e:
         # Agar rasm yo'q bo'lsa, placeholder qaytarish
         return send_from_directory(app.config['UPLOAD_FOLDER'], 'placeholder.jpg')
-
 
 # ... [Boshqa routelar (books, book_detail, error handlers) oldingidek] ...
 @app.route("/books")
