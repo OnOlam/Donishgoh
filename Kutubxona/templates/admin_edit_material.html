@@ -3,12 +3,12 @@
 
 <div class="edit-container">
   <div class="edit-header">
-    <h2>✏️ Таҳрири Мавод</h2>
+    <h2>✏️ {{ _('edit_material') }}</h2>
     <div class="edit-type-badge">
-      {% if material.material_type == 'book' %}📚 Китоб
-      {% elif material.material_type == 'app' %}📱 Барнома
-      {% elif material.material_type == 'image' %}🖼️ Расм
-      {% elif material.material_type == 'video' %}🎬 Видео
+      {% if material.material_type == 'book' %}📚 {{ _('books_label') }}
+      {% elif material.material_type == 'app' %}📱 {{ _('apps_label') }}
+      {% elif material.material_type == 'image' %}🖼️ {{ _('images_label') }}
+      {% elif material.material_type == 'video' %}🎬 {{ _('videos_label') }}
       {% endif %}
     </div>
   </div>
@@ -20,28 +20,52 @@
     
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">📝 Унвон *</label>
+        <label class="form-label">📝 {{ _('title') }} *</label>
         <input class="input" name="title" value="{{ material.title }}" required>
       </div>
 
       <div class="form-group">
-        <label class="form-label">👤 Муаллиф/Офаридгор</label>
+        <label class="form-label">👤 {{ _('author') }}</label>
         <input class="input" name="author" value="{{ material.author if material.author else '' }}">
       </div>
     </div>
 
     <div class="form-group">
-      <label class="form-label">📄 Тавсиф</label>
+      <label class="form-label">📄 {{ _('description') }}</label>
       <textarea class="input" name="description" rows="6">{{ material.description if material.description else '' }}</textarea>
     </div>
 
+    <!-- MUQOVA YUKLASH (Yangi) -->
     <div class="form-group">
-      <label class="form-label">📎 Файли навро бор кунед (opsional)</label>
+      <label class="form-label">🖼️ {{ _('cover_label') }} ({{ _('optional') }})</label>
+      
+      {% if material.cover_image %}
+        <div class="current-cover">
+          <img src="{{ url_for('cover_image', filename=material.cover_image) }}" alt="Joriy muqova">
+          <p class="current-cover-text">{{ _('current_cover') }}: {{ material.cover_image }}</p>
+        </div>
+      {% endif %}
+      
+      <div class="file-upload-wrapper">
+        <input type="file" name="cover_image" id="coverInput" class="file-input" accept=".jpg,.jpeg,.png,.webp">
+        <label for="coverInput" class="file-label">
+          <span class="file-icon">🖼️</span>
+          <span id="coverName">{{ _('choose_cover') }}...</span>
+        </label>
+        <div class="file-hint">
+          {{ _('cover_upload') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ASOSIY FAYL YUKLASH (O'zgarmagan) -->
+    <div class="form-group">
+      <label class="form-label">📎 {{ _('new_file_optional') }}</label>
       
       {% if material.filename %}
         <div class="current-file">
           <span class="current-file-icon">📁</span>
-          <span class="current-file-name">Файли ҷорӣ: {{ material.filename }}</span>
+          <span class="current-file-name">{{ _('current_file') }}: {{ material.filename }}</span>
         </div>
       {% endif %}
       
@@ -54,13 +78,13 @@
                        {% endif %}">
         <label for="fileInput" class="file-label">
           <span class="file-icon">📁</span>
-          <span id="fileName">Файли навро интихоб кунед...</span>
+          <span id="fileName">{{ _('choose_new_file') }}...</span>
         </label>
         <div class="file-hint">
-          {% if material.material_type == 'book' %}Иҷозат додаги: PDF, EPUB, MOBI, DJVU, FB2, DOC, DOCX
-          {% elif material.material_type == 'app' %}Иҷозат додаги: APK, EXE, MSI, DMG, DEB, RPM
-          {% elif material.material_type == 'image' %}Иҷозат додаги: JPG, PNG, GIF, WEBP, SVG, BMP
-          {% elif material.material_type == 'video' %}Иҷозат додаги: MP4, AVI, MKV, MOV, WMV, FLV, WEBM
+          {% if material.material_type == 'book' %}{{ _('allowed') }}: PDF, EPUB, MOBI, DJVU, FB2, DOC, DOCX
+          {% elif material.material_type == 'app' %}{{ _('allowed') }}: APK, EXE, MSI, DMG, DEB, RPM
+          {% elif material.material_type == 'image' %}{{ _('allowed') }}: JPG, PNG, GIF, WEBP, SVG, BMP
+          {% elif material.material_type == 'video' %}{{ _('allowed') }}: MP4, AVI, MKV, MOV, WMV, FLV, WEBM
           {% endif %}
         </div>
       </div>
@@ -68,20 +92,33 @@
 
     <div class="form-actions">
       <button class="btn btn-large btn-success" type="submit">
-        ✅ Захира кардан
+        ✅ {{ _('save_changes') }}
       </button>
       <a class="btn btn-large btn-secondary" href="{{ url_for('admin') }}">
-        ❌ Бекор кардан
+        ❌ {{ _('cancel') }}
       </a>
     </div>
   </form>
 </div>
 
 <script>
+// Muqova fayl nomini ko'rsatish
+document.getElementById('coverInput').addEventListener('change', function(e) {
+  const name = e.target.files[0] ? e.target.files[0].name : '{{ _("choose_cover") }}...';
+  document.getElementById('coverName').textContent = name;
+});
+
+// Asosiy fayl nomini ko'rsatish
 document.getElementById('fileInput').addEventListener('change', function(e) {
-  const fileName = e.target.files[0] ? e.target.files[0].name : 'Маводи навро интиҳоб кунед...';
-  document.getElementById('fileName').textContent = fileName;
+  const name = e.target.files[0] ? e.target.files[0].name : '{{ _("choose_new_file") }}...';
+  document.getElementById('fileName').textContent = name;
 });
 </script>
+
+<style>
+.current-cover { margin:12px 0; text-align:center; }
+.current-cover img { max-width:200px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); margin-bottom:8px; }
+.current-cover-text { font-size:14px; color:#666; }
+</style>
 
 {% endblock %}
