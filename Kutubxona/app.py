@@ -463,6 +463,43 @@ def register():
     
     return render_template("register.html", _=_)
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Kirish"""
+    if request.method == "POST":
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        db.close()
+        
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['user_name'] = user['name']
+            session['admin_level'] = user['admin_level']
+            
+            if user['admin_level'] == 2:
+                flash(f"✅ Ҳуш омадед, {user['name']}!")
+            elif user['admin_level'] == 1:
+                flash(f"✅ Ҳуш омадед, {user['name']}!")
+            else:
+                flash(f"✅ Ҳуш омадед, {user['name']}!")
+            
+            return redirect(url_for('index'))
+        else:
+            flash("❌ Почтаи электронӣ ё пароли нодуруст")
+            return redirect(url_for('login'))
+    
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    """Chiqish"""
+    session.clear()
+    flash("✅ Аз система бромадид")
+    return redirect(url_for('index'))
+
 @app.route("/verify-email/<token>")
 def verify_email(token):
     db = get_db()
