@@ -107,13 +107,15 @@ def init_db():
     
     db.commit()
     
-    # Bosh adminni yaratish (agar mavjud bo'lmasa)
-    cur.execute("SELECT id FROM users WHERE email=?", ('admin@local',))
-    if not cur.fetchone():
+    # Bosh adminni yaratish (agar mavjud bo'lmasa) - XAVFSIZ QILIB Tuzatildi
+    try:
         cur.execute("INSERT INTO users (name, email, password, admin_level) VALUES (?,?,?,?)",
                     ("Сардори админ", "admin@local", generate_password_hash("admin123"), 2))
         db.commit()
         print("✅ Сардори маъмурӣ: admin@local / admin123")
+    except sqlite3.IntegrityError:
+        # Agar admin allaqachon mavjud bo'lsa, xatolikni e'tiborsiz qoldirish
+        pass
     
     db.close()
 
@@ -170,6 +172,12 @@ def allowed_file(filename, material_type):
         return False
     ext = filename.rsplit('.', 1)[1].lower()
     return ext in ALLOWED_EXTENSIONS.get(material_type, set())
+
+# ========================
+# DATABASE NI ISHGA TUSHIRISH (WSGI MUHITLAR UCHUN MUHIM!)
+# ========================
+# Bu qator HAR DOIM ishlaydi: Gunicorn, uWSGI, Railway, Heroku da ham
+init_db()
 
 # ========================
 # UMUMIY SAHIFALAR
@@ -654,7 +662,7 @@ def notify_reply():
     # Bosh adminga xabar yuborish (user_id=1)
     db.execute(
         "INSERT INTO notifications (user_id, title, message, created_at) VALUES (?,?,?,?)",
-        (1, f"Javob: {session.get('user_name')}", text, datetime.datetime.utcnow().isoformat())
+        (1, f"Javоб: {session.get('user_name')}", text, datetime.datetime.utcnow().isoformat())
     )
     db.commit()
     db.close()
@@ -715,7 +723,14 @@ def internal_error(e):
 # ========================
 # DASTURNI ISHGA TUSHIRISH
 # ========================
-if __name__ == '__main__':
-    # Development
-    port = int(os.environ.get("PORT", 8090))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == "__main__":
+    # init_db() endi modul yuklanganda avtomatik ishlaydi (yuqorida chaqirilgan)
+    
+    # Environment variables
+    port = int(os.environ.get('PORT', 5050))
+    host = os.environ.get('HOST', '0.0.0.0')
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    # Serverni ishga tushirish
+    logging.info(f"🚀 Server starting on {host}:{port} (debug={debug})")
+    app.run(host=host, port=port, debug=debug)
