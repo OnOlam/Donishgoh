@@ -10,14 +10,25 @@ import datetime
 # ========================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+COVER_FOLDER = os.path.join(BASE_DIR, 'covers')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(COVER_FOLDER, exist_ok=True)
 
 DB_PATH = os.path.join(BASE_DIR, 'data.db')
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['COVER_FOLDER'] = COVER_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.secret_key = "CHANGE_THIS_TO_RANDOM_SECRET_KEY_IN_PRODUCTION_123456789"
+
+# Til sozlamalari
+LANGUAGES = {
+    'uz': '🇺🇿 Oʻzbek',
+    'ru': '🇷🇺 Русский',
+    'tg': '🇹🇯 Тоҷикӣ'
+}
+DEFAULT_LANG = 'uz'
 
 # Fayl turlari uchun ruxsat etilgan kengaytmalar
 ALLOWED_EXTENSIONS = {
@@ -26,6 +37,125 @@ ALLOWED_EXTENSIONS = {
     'image': {'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'},
     'video': {'mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'mpeg'}
 }
+ALLOWED_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+
+# ========================
+# CONTEXT PROCESSOR (MUHIM!)
+# ========================
+@app.context_processor
+def inject_globals():
+    """Barcha templatega kerakli o'zgaruvchanlarni qo'shadi"""
+    def get_locale():
+        """Foydalanuvchi tilini olish"""
+        return session.get('lang', DEFAULT_LANG)
+    
+    def _(text):
+        """Oddiy tarjima funksiyasi"""
+        translations = {
+            'uz': {
+                'search_placeholder': 'Kitob nomi, muallif...',
+                'no_results': 'Hech narsa topilmadi 😔',
+                'login_to_download': 'Yuklab olish uchun tizimga kiring yoki ro\'yxatdan o\'ting',
+                'read_online': 'Onlayn o\'qish',
+                'download': 'Yuklab olish',
+                'cover_upload': 'Muqova rasmini tanlang (faqat .jpg, .png)',
+                'email_verified': 'Email tasdiqlandi! Endi tizimga kiring.',
+                'verify_email': 'Iltimos, emailingizni tasdiqlang. Tasdiqlash uchun havola yuborildi.',
+                'password_reset_sent': 'Parolni tiklash uchun havola emailingizga yuborildi.',
+                'password_updated': 'Parol muvaffaqiyatli yangilandi!',
+                'invalid_token': 'Noto\'g\'ri yoki eskirgan havola',
+                'register_success': '✅ Ro\'yxatdan o\'tdingiz! Emailingizni tasdiqlang.',
+                'cover_label': 'Muqova',
+                'search_label': 'Qidiruv',
+                'books_label': 'Kitoblar',
+                'apps_label': 'Ilovalar',
+                'images_label': 'Rasmlar',
+                'videos_label': 'Videolar',
+                'welcome': 'Xush kelibsiz',
+                'about_site': 'Sayt haqida',
+                'tutorial_step1': 'Ushbu platformada kitoblar, ilovalar, rasmlar va videolarni topishingiz mumkin. Har bir materialga statistik kartalardan foydalaning.',
+                'materials_types': 'Material turlari',
+                'how_to_use': 'Qanday foydalanish mumkin?',
+                'more_details': 'Batafsil',
+                'register_and_admin': 'Ro\'yxatdan o\'ting va admin bo\'ling',
+                'back': 'Orqaga',
+                'next': 'Keyingi',
+                'close': 'Yopish',
+                'welcome_library': 'Elektron kutubxonaga xush kelibsiz',
+                'library_description': 'Kitoblar, ilovalar, rasmlar va videolarni bepul yuklab oling!',
+                'how_to_use_site': 'Saytdan qanday foydalanish mumkin?',
+                'site_statistics': 'Sayt statistikasi',
+                'search_results': 'Qidiruv natijalari',
+                'details': 'Tafsilotlar',
+                'clear_search': 'Qidiruvni tozalash',
+                'user_services': 'Foydalanuvchi xizmatlari',
+                'all_materials_free': 'Barcha materiallar bepul yuklab olinadi',
+                'register_and_upload': 'Ro\'yxatdan o\'ting va admin bo\'ling',
+                'upload_your_materials': 'O\'z materiallaringizni yuklang',
+                'track_statistics': 'Statistikani kuzatib boring',
+                'author': 'Muallif',
+                'uploaded_by': 'Yuklagan',
+                'upload_date': 'Yuklangan sana',
+                'views': 'Ko\'rishlar',
+                'times': 'marta',
+                'description': 'Tavsif',
+                'no_description': 'Tavsif mavjud emas',
+                'read_online': 'Onlayn o\'qish',
+                'file_not_uploaded': 'Fayl yuklanmagan',
+                'additional_info': 'Qo\'shimcha ma\'lumot',
+                'file': 'Fayl',
+                'type': 'Tur',
+                'admin_actions': 'Admin amallari',
+                'edit': 'Tahrirlash',
+                'statistics': 'Statistika',
+                'confirm_delete': 'Materialni o\'chirishni xohlaysizmi?',
+                'delete': 'O\'chirish',
+                'only_your_materials': 'Siz faqat o\'z materiallaringizni boshqarishingiz mumkin',
+                'edit_material': 'Materialni tahrirlash',
+                'title': 'Sarlavha',
+                'optional': 'ixtiyoriy',
+                'current_cover': 'Joriy muqova',
+                'choose_cover': 'Muqovani tanlang',
+                'new_file_optional': 'Yangi faylni yuklang (ixtiyoriy)',
+                'current_file': 'Joriy fayl',
+                'choose_new_file': 'Yangi faylni tanlang',
+                'allowed': 'Ruxsat etilgan',
+                'save_changes': 'O\'zgarishlarni saqlash',
+                'cancel': 'Bekor qilish'
+            },
+            'ru': {
+                'search_placeholder': 'Название книги, автор...',
+                'no_results': 'Ничего не найдено 😔',
+                'login_to_download': 'Войдите или зарегистрируйтесь для скачивания',
+                'read_online': 'Читать онлайн',
+                'download': 'Скачать',
+                'cover_upload': 'Выберите обложку (только .jpg, .png)',
+                'books_label': 'Книги',
+                'apps_label': 'Приложения',
+                'images_label': 'Изображения',
+                'videos_label': 'Видео'
+            },
+            'tg': {
+                'search_placeholder': 'Номи китоб, муаллиф...',
+                'no_results': 'Ҳеч чиз ёфт нашуд 😔',
+                'login_to_download': 'Барои зеркашӣ кардан ба система ворид шавед ё сабти ном кунед',
+                'read_online': 'Онлайн хондан',
+                'download': 'Зеркашӣ кардан',
+                'cover_upload': 'Тасвири муқоваро интихоб кунед (фақат .jpg, .png)',
+                'books_label': 'Китобҳо',
+                'apps_label': 'Барномаҳо',
+                'images_label': 'Тасвирҳо',
+                'videos_label': 'Видеоҳо'
+            }
+        }
+        current_lang = session.get('lang', DEFAULT_LANG)
+        return translations.get(current_lang, translations[DEFAULT_LANG]).get(text, text)
+    
+    return {
+        'get_locale': get_locale,
+        'LANGUAGES': LANGUAGES,
+        '_': _
+    }
 
 # ========================
 # DATABASE FUNKSIYALARI
@@ -60,6 +190,7 @@ def init_db():
       author TEXT, 
       description TEXT, 
       filename TEXT, 
+      cover_image TEXT,
       material_type TEXT NOT NULL,
       created_at TEXT NOT NULL,
       uploaded_by INTEGER NOT NULL,
@@ -156,6 +287,23 @@ def allowed_file(filename, material_type):
     ext = filename.rsplit('.', 1)[1].lower()
     return ext in ALLOWED_EXTENSIONS.get(material_type, set())
 
+def allowed_cover_file(filename):
+    """Muqova faylini tekshirish"""
+    if '.' not in filename:
+        return False
+    ext = filename.rsplit('.', 1)[1].lower()
+    return ext in ALLOWED_COVER_EXTENSIONS
+
+# ========================
+# TIL BOSHQARUVI
+# ========================
+@app.route('/set-language/<lang_code>')
+def set_language(lang_code):
+    """Tilni o'zgartirish"""
+    if lang_code in LANGUAGES:
+        session['lang'] = lang_code
+    return redirect(request.referrer or url_for('index'))
+
 # ========================
 # UMUMIY SAHIFALAR
 # ========================
@@ -163,6 +311,25 @@ def allowed_file(filename, material_type):
 def index():
     """Bosh sahifa - statistika bilan"""
     db = get_db()
+    
+    # Qidiruv
+    search_query = request.args.get('q', '').strip()
+    if search_query:
+        materials = db.execute("""
+            SELECT * FROM materials 
+            WHERE material_type='book' 
+            AND (title LIKE ? OR author LIKE ?)
+            ORDER BY id DESC
+        """, (f'%{search_query}%', f'%{search_query}%')).fetchall()
+        if not materials:
+            flash("Hech narsa topilmadi 😔")
+    else:
+        materials = db.execute("""
+            SELECT * FROM materials 
+            WHERE material_type='book' 
+            ORDER BY id DESC LIMIT 20
+        """).fetchall()
+    
     stats = {
         'books': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='book'").fetchone()['c'],
         'apps': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='app'").fetchone()['c'],
@@ -170,7 +337,7 @@ def index():
         'videos': db.execute("SELECT COUNT(*) as c FROM materials WHERE material_type='video'").fetchone()['c'],
     }
     db.close()
-    return render_template("index.html", stats=stats)
+    return render_template("index.html", stats=stats, materials=materials, search_query=search_query)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -223,6 +390,7 @@ def login():
             session['user_id'] = user['id']
             session['user_name'] = user['name']
             session['admin_level'] = user['admin_level']
+            session['lang'] = session.get('lang', DEFAULT_LANG)
             
             if user['admin_level'] == 2:
                 flash(f"✅ Ҳуш омадед, {user['name']}!")
@@ -308,13 +476,33 @@ def material_detail(material_id):
     return render_template("material_detail.html", material=material, uploader=uploader)
 
 @app.route("/download/<path:filename>")
+@login_required
 def download_file(filename):
-    """Faylni yuklab olish"""
+    """Faylni yuklab olish (faqat kirgan foydalanuvchilar uchun)"""
     try:
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
     except Exception as e:
         flash(f"❌ Хатогии зеркашӣ кардани файл: {str(e)}")
         return redirect(url_for('materials'))
+
+@app.route("/view/<path:filename>")
+@login_required
+def view_file(filename):
+    """Faylni ko'rish (PDF uchun)"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
+    except Exception as e:
+        flash(f"❌ Хатогӣ: {str(e)}")
+        return redirect(url_for('materials'))
+
+@app.route('/cover/<path:filename>')
+def cover_image(filename):
+    """Muqova rasmini ko'rsatish"""
+    try:
+        return send_from_directory(app.config['COVER_FOLDER'], filename)
+    except Exception:
+        # Agar rasm yo'q bo'lsa, placeholder qaytarish
+        return '', 404
 
 # ========================
 # ADMIN PANELI
@@ -352,6 +540,7 @@ def admin_add_material():
     author = request.form.get('author', '').strip()
     description = request.form.get('description', '').strip()
     uploaded_file = request.files.get('file')
+    cover_file = request.files.get('cover_image')
     
     # Oddiy admin faqat book va app yuklashi mumkin
     if user['admin_level'] == 1 and material_type not in ['book', 'app']:
@@ -363,7 +552,7 @@ def admin_add_material():
         flash("❌ Унвон лозим аст")
         return redirect(url_for('admin'))
     
-    # Fayl saqlash
+    # Asosiy faylni saqlash
     filename = None
     if uploaded_file and uploaded_file.filename:
         if allowed_file(uploaded_file.filename, material_type):
@@ -382,11 +571,29 @@ def admin_add_material():
             flash(f"❌ Навъи файл барои '{material_type}' мувофиқ нест")
             return redirect(url_for('admin'))
     
+    # Muqova rasmini saqlash
+    cover_filename = None
+    if cover_file and cover_file.filename:
+        if allowed_cover_file(cover_file.filename):
+            cover_filename = secure_filename(cover_file.filename)
+            base_name = cover_filename
+            counter = 1
+            while os.path.exists(os.path.join(app.config['COVER_FOLDER'], cover_filename)):
+                name, ext = os.path.splitext(base_name)
+                cover_filename = f"{name}_{counter}{ext}"
+                counter += 1
+            
+            cover_path = os.path.join(app.config['COVER_FOLDER'], cover_filename)
+            cover_file.save(cover_path)
+        else:
+            flash("❌ Навъи муқова нодуруст (фақат .jpg, .jpeg, .png, .webp)")
+            return redirect(url_for('admin'))
+    
     # Ma'lumotlar bazasiga qo'shish
     db = get_db()
     db.execute(
-        "INSERT INTO materials (title, author, description, filename, material_type, created_at, uploaded_by) VALUES (?,?,?,?,?,?,?)",
-        (title, author, description, filename, material_type, datetime.datetime.utcnow().isoformat(), user['id'])
+        "INSERT INTO materials (title, author, description, filename, cover_image, material_type, created_at, uploaded_by) VALUES (?,?,?,?,?,?,?,?)",
+        (title, author, description, filename, cover_filename, material_type, datetime.datetime.utcnow().isoformat(), user['id'])
     )
     db.commit()
     db.close()
@@ -418,6 +625,7 @@ def admin_edit_material(material_id):
         author = request.form.get('author', '').strip()
         description = request.form.get('description', '').strip()
         uploaded_file = request.files.get('file')
+        cover_file = request.files.get('cover_image')
         
         if not title:
             flash("❌ Унвон лозим аст")
@@ -447,20 +655,43 @@ def admin_edit_material(material_id):
                 saved_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 uploaded_file.save(saved_path)
                 
-                db.execute(
-                    "UPDATE materials SET title=?, author=?, description=?, filename=? WHERE id=?",
-                    (title, author, description, filename, material_id)
-                )
+                db.execute("UPDATE materials SET filename=? WHERE id=?", (filename, material_id))
             else:
                 flash("❌ Навъи мавод дуруст не")
                 db.close()
                 return redirect(url_for('admin_edit_material', material_id=material_id))
-        else:
-            # Fayl yuklanmagan, faqat ma'lumotlarni yangilash
-            db.execute(
-                "UPDATE materials SET title=?, author=?, description=? WHERE id=?",
-                (title, author, description, material_id)
-            )
+        
+        # Yangi muqova yuklangan bo'lsa
+        if cover_file and cover_file.filename:
+            if allowed_cover_file(cover_file.filename):
+                # Eski muqovani o'chirish
+                if material['cover_image']:
+                    old_cover_path = os.path.join(app.config['COVER_FOLDER'], material['cover_image'])
+                    if os.path.exists(old_cover_path):
+                        try:
+                            os.remove(old_cover_path)
+                        except Exception:
+                            pass
+                
+                # Yangi muqovani saqlash
+                cover_filename = secure_filename(cover_file.filename)
+                base_name = cover_filename
+                counter = 1
+                while os.path.exists(os.path.join(app.config['COVER_FOLDER'], cover_filename)):
+                    name, ext = os.path.splitext(base_name)
+                    cover_filename = f"{name}_{counter}{ext}"
+                    counter += 1
+                
+                cover_path = os.path.join(app.config['COVER_FOLDER'], cover_filename)
+                cover_file.save(cover_path)
+                
+                db.execute("UPDATE materials SET cover_image=? WHERE id=?", (cover_filename, material_id))
+        
+        # Ma'lumotlarni yangilash
+        db.execute(
+            "UPDATE materials SET title=?, author=?, description=? WHERE id=?",
+            (title, author, description, material_id)
+        )
         
         db.commit()
         db.close()
@@ -495,6 +726,15 @@ def admin_delete_material(material_id):
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
+            except Exception:
+                pass
+    
+    # Muqovani o'chirish
+    if material['cover_image']:
+        cover_path = os.path.join(app.config['COVER_FOLDER'], material['cover_image'])
+        if os.path.exists(cover_path):
+            try:
+                os.remove(cover_path)
             except Exception:
                 pass
     
@@ -604,7 +844,7 @@ def admin_notify_user(user_id):
         db.commit()
         db.close()
         
-        flash(f"✅ {target_user['name']}ga xabar yuborildi")
+        flash(f"✅ {target_user['name']}га хабар фиристода шуд")
         return redirect(url_for('admin'))
     
     db.close()
@@ -628,7 +868,7 @@ def notifications():
 @app.route("/notify/reply", methods=["POST"])
 @login_required
 def notify_reply():
-    """Adminga javob yuborish (hozircha ishlatilmaydi)"""
+    """Adminga javob yuborish"""
     text = request.form.get('text', '').strip()
     
     if not text:
@@ -639,7 +879,7 @@ def notify_reply():
     # Bosh adminga xabar yuborish (user_id=1)
     db.execute(
         "INSERT INTO notifications (user_id, title, message, created_at) VALUES (?,?,?,?)",
-        (1, f"Javob: {session.get('user_name')}", text, datetime.datetime.utcnow().isoformat())
+        (1, f"Ҷавоб: {session.get('user_name')}", text, datetime.datetime.utcnow().isoformat())
     )
     db.commit()
     db.close()
@@ -692,4 +932,6 @@ if __name__ == "__main__":
     init_db()
     
     # Serverni ishga tushirish
-    app.run(host="0.0.0.0", port=5050, debug=False)
+    print("🚀 Server 0.0.0.0:5050 da ishga tushdi")
+    print("📝 Admin: admin@local / admin123")
+    app.run(host="0.0.0.0", port=5050, debug=True)
