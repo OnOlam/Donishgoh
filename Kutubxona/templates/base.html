@@ -1,5 +1,7 @@
 <!doctype html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ session.get('lang', 'uz') }}">
+<!--           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 get_locale() O'RNIGA bu - 100% ISHLAYDI! -->
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -275,6 +277,17 @@
 
     {% block content %}{% endblock %}
 
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+      {% set current_lang = session.get('lang', 'uz') %}
+      {% for code, name in LANGUAGES.items() %}
+        <a href="{{ url_for('set_language', lang_code=code) }}" 
+           class="lang-btn {% if current_lang == code %}active{% endif %}">
+          {{ name }}
+        </a>
+      {% endfor %}
+    </div>
+
     <div class="footer">
       <div class="footer-content">
         <div>📚 Китобхона — Платформаи захираҳои электронӣ</div>
@@ -291,16 +304,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Language Switcher -->
-  <div class="language-switcher">
-    {% for code, name in LANGUAGES.items() %}
-      <a href="{{ url_for('set_language', lang_code=code) }}" 
-         class="lang-btn {% if get_locale() == code %}active{% endif %}">
-        {{ name }}
-      </a>
-    {% endfor %}
   </div>
 </body>
 </html>
