@@ -81,7 +81,7 @@ def get_locale():
     """Foydalanuvchi tilini olish (request kontekstini tekshiradi)"""
     try:
         if 'lang' in session:
-            return session['lang']
+            return session.get('lang', DEFAULT_LANG)
         if request and request.accept_languages:
             return request.accept_languages.best_match(LANGUAGES.keys()) or DEFAULT_LANG
         return DEFAULT_LANG
@@ -340,9 +340,13 @@ init_db()
 # CONTEXT PROCESSOR (MUHIM!)
 # ========================
 @app.context_processor
-def inject_languages():
-    """Barcha templatega LANGUAGES o'zgaruvchisini qo'shadi"""
-    return dict(LANGUAGES=LANGUAGES)
+def inject_globals():
+    """BARCHA templatega kerakli funksiyalarni qo'shadi"""
+    return dict(
+        get_locale=get_locale,  # Tilni olish funksiyasi
+        LANGUAGES=LANGUAGES,    # Tillar ro'yxati
+        _=_                     # Tarjima funksiyasi
+    )
 
 # ========================
 # DECORATORLAR
@@ -401,6 +405,8 @@ def set_language(lang_code):
 # ========================
 @app.route("/")
 def index():
+    if 'lang' not in session:
+        session['lang'] = DEFAULT_LANG
     db = get_db()
     # Qidiruv
     search_query = request.args.get('q', '').strip()
@@ -478,9 +484,16 @@ def register():
 
 @app.route("/logout")
 def logout():
-    """Chiqish"""
-    session.clear()
-    flash("✅ Аз система бромадид")
+    """Chiqish - To'g'rilangan (O'zbek tilida + xavfsiz)"""
+    # Flash xabarini SESSION TOZALANMAGUNCHA qo'shamiz
+    # Va faqat foydalanuvchi ma'lumotlarini o'chiramiz
+    flash("✅ Siz tizimdan chiqdingiz!")
+    
+    # Faqat foydalanuvchi ma'lumotlarini o'chirish (til saqlanadi!)
+    session.pop('user_id', None)
+    session.pop('user_name', None)
+    session.pop('admin_level', None)
+    
     return redirect(url_for('index'))
 
 @app.route("/verify-email/<token>")
